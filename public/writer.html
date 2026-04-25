@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIBoard - Writer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="board-page">
+    <div class="toolbar">
+      <span class="tag" id="boardTag"></span>
+      <label>
+        Color
+        <input id="color" type="color" value="#111111" />
+      </label>
+      <label>
+        Size
+        <input id="size" type="range" min="1" max="24" value="4" />
+      </label>
+      <button id="eraser" class="secondary" type="button">Eraser</button>
+      <button id="pen" class="primary" type="button">Pen</button>
+      <div class="spacer"></div>
+      <button id="clear" type="button">Clear Board</button>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="board"></canvas>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const boardId = (params.get("board") || "set1").trim() || "set1";
+      document.getElementById("boardTag").textContent = `Writer: ${boardId}`;
+
+      const socket = io();
+      socket.emit("join_board", boardId);
+
+      const canvas = document.getElementById("board");
+      const ctx = canvas.getContext("2d");
+      const colorEl = document.getElementById("color");
+      const sizeEl = document.getElementById("size");
+      const eraserEl = document.getElementById("eraser");
+      const penEl = document.getElementById("pen");
+      const clearEl = document.getElementById("clear");
+
+      let isDrawing = false;
+      let lastPoint = null;
+      let drawMode = "pen";
+      const segments = [];
+
+      function resizeCanvas() {
+        const oldWidth = canvas.width;
+        const oldHeight = canvas.height;
+        const newWidth = canvas.clientWidth;
+        const newHeight = canvas.clientHeight;
+
+        if (oldWidth === newWidth && oldHeight === newHeight) return;
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        redrawAll();
+      }
+
+      function toNorm(point) {
+        return {
+          x: point.x / canvas.width,
+          y: point.y / canvas.height
+        };
+      }
+
+      function fromNorm(point) {
+        return {
+          x: point.x * canvas.width,
+          y: point.y * canvas.height
+        };
+      }
+
+      function drawSegment(segment) {
+        const from = fromNorm(segment.from);
+        const to = fromNorm(segment.to);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = segment.size;
+        ctx.strokeStyle = segment.mode === "eraser" ? "#ffffff" : segment.color;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.stroke();
+      }
+
+      function redrawAll() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const segment of segments) {
+          drawSegment(segment);
+        }
+      }
+
+      function getPos(ev) {
+        const rect = canvas.getBoundingClientRect();
+        const touch = ev.touches ? ev.touches[0] : null;
+        const clientX = touch ? touch.clientX : ev.clientX;
+        const clientY = touch ? touch.clientY : ev.clientY;
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+        };
+      }
+
+      function startDraw(ev) {
+        ev.preventDefault();
+        isDrawing = true;
+        lastPoint = getPos(ev);
+      }
+
+      function moveDraw(ev) {
+        if (!isDrawing) return;
+        ev.preventDefault();
+
+        const current = getPos(ev);
+        const segment = {
+          from: toNorm(lastPoint),
+          to: toNorm(current),
+          color: colorEl.value,
+          size: Number(sizeEl.value),
+          mode: drawMode
+        };
+
+        segments.push(segment);
+        drawSegment(segment);
+        socket.emit("draw_segment", { boardId, segment });
+        lastPoint = current;
+      }
+
+      function endDraw(ev) {
+        if (!isDrawing) return;
+        ev.preventDefault();
+        isDrawing = false;
+        lastPoint = null;
+      }
+
+      socket.on("draw_segment", (segment) => {
+        segments.push(segment);
+        drawSegment(segment);
+      });
+
+      socket.on("board_snapshot", (snapshot) => {
+        segments.length = 0;
+        for (const segment of snapshot) segments.push(segment);
+        redrawAll();
+      });
+
+      socket.on("clear_board", () => {
+        segments.length = 0;
+        redrawAll();
+      });
+
+      eraserEl.addEventListener("click", () => {
+        drawMode = "eraser";
+      });
+
+      penEl.addEventListener("click", () => {
+        drawMode = "pen";
+      });
+
+      clearEl.addEventListener("click", () => {
+        segments.length = 0;
+        redrawAll();
+        socket.emit("clear_board", boardId);
+      });
+
+      canvas.addEventListener("mousedown", startDraw);
+      canvas.addEventListener("mousemove", moveDraw);
+      window.addEventListener("mouseup", endDraw);
+
+      canvas.addEventListener("touchstart", startDraw, { passive: false });
+      canvas.addEventListener("touchmove", moveDraw, { passive: false });
+      window.addEventListener("touchend", endDraw, { passive: false });
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+    </script>
+  </body>
+</html>

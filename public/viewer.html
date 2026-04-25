@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIBoard - Viewer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="board-page">
+    <div class="toolbar">
+      <span class="tag" id="boardTag"></span>
+      <span class="tag">Read-only viewer</span>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="board"></canvas>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const boardId = (params.get("board") || "set1").trim() || "set1";
+      document.getElementById("boardTag").textContent = `Viewer: ${boardId}`;
+
+      const socket = io();
+      socket.emit("join_board", boardId);
+
+      const canvas = document.getElementById("board");
+      const ctx = canvas.getContext("2d");
+      const segments = [];
+
+      function resizeCanvas() {
+        const oldWidth = canvas.width;
+        const oldHeight = canvas.height;
+        const newWidth = canvas.clientWidth;
+        const newHeight = canvas.clientHeight;
+
+        if (oldWidth === newWidth && oldHeight === newHeight) return;
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        redrawAll();
+      }
+
+      function fromNorm(point) {
+        return {
+          x: point.x * canvas.width,
+          y: point.y * canvas.height
+        };
+      }
+
+      function drawSegment(segment) {
+        const from = fromNorm(segment.from);
+        const to = fromNorm(segment.to);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = segment.size;
+        ctx.strokeStyle = segment.mode === "eraser" ? "#ffffff" : segment.color;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.stroke();
+      }
+
+      function redrawAll() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const segment of segments) drawSegment(segment);
+      }
+
+      socket.on("board_snapshot", (snapshot) => {
+        segments.length = 0;
+        for (const segment of snapshot) segments.push(segment);
+        redrawAll();
+      });
+
+      socket.on("draw_segment", (segment) => {
+        segments.push(segment);
+        drawSegment(segment);
+      });
+
+      socket.on("clear_board", () => {
+        segments.length = 0;
+        redrawAll();
+      });
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIBoard - Connect Devices</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="landing-body">
+    <main class="card">
+      <h1>AIBoard</h1>
+      <p>Use the same board name on both devices (example: set1 or set2).</p>
+
+      <label for="boardId">Board Name</label>
+      <input id="boardId" type="text" value="set1" maxlength="40" />
+
+      <div class="actions">
+        <button id="openWriter" class="primary">Open Writer (Mobile/Tab)</button>
+        <button id="openViewer" class="secondary">Open Viewer (Computer)</button>
+      </div>
+
+      <p class="hint">Both devices must be on the same network.</p>
+    </main>
+
+    <script>
+      const boardInput = document.getElementById("boardId");
+      const writerBtn = document.getElementById("openWriter");
+      const viewerBtn = document.getElementById("openViewer");
+
+      function openPage(pathname) {
+        const board = (boardInput.value || "set1").trim() || "set1";
+        window.location.href = `${pathname}?board=${encodeURIComponent(board)}`;
+      }
+
+      writerBtn.addEventListener("click", () => openPage("/writer.html"));
+      viewerBtn.addEventListener("click", () => openPage("/viewer.html"));
+    </script>
+  </body>
+</html>
