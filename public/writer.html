@@ -47,31 +47,34 @@
       let lastPoint = null;
       let drawMode = "pen";
       const segments = [];
+      const BOARD_WIDTH = 1920;
+      const BOARD_HEIGHT = 1080;
 
       function resizeCanvas() {
-        const oldWidth = canvas.width;
-        const oldHeight = canvas.height;
-        const newWidth = canvas.clientWidth;
-        const newHeight = canvas.clientHeight;
+        const rect = canvas.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        const pixelWidth = Math.round(rect.width * ratio);
+        const pixelHeight = Math.round(rect.height * ratio);
 
-        if (oldWidth === newWidth && oldHeight === newHeight) return;
+        if (canvas.width === pixelWidth && canvas.height === pixelHeight) return;
 
-        canvas.width = newWidth;
-        canvas.height = newHeight;
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         redrawAll();
       }
 
       function toNorm(point) {
         return {
-          x: point.x / canvas.width,
-          y: point.y / canvas.height
+          x: point.x / BOARD_WIDTH,
+          y: point.y / BOARD_HEIGHT
         };
       }
 
       function fromNorm(point) {
         return {
-          x: point.x * canvas.width,
-          y: point.y * canvas.height
+          x: point.x * BOARD_WIDTH,
+          y: point.y * BOARD_HEIGHT
         };
       }
 
@@ -89,7 +92,7 @@
       }
 
       function redrawAll() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
         for (const segment of segments) {
           drawSegment(segment);
         }
