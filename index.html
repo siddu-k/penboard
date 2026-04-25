@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIBoard GitHub Landing</title>
+    <style>
+      :root {
+        --bg: #f6f1e7;
+        --card: #fffdf8;
+        --ink: #1c1c1c;
+        --line: #d8cab3;
+        --accent: #cc5a17;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 15% 10%, #ffe5c8 0%, transparent 35%),
+          radial-gradient(circle at 85% 15%, #dff6ea 0%, transparent 30%),
+          var(--bg);
+        display: grid;
+        place-items: center;
+        padding: 18px;
+      }
+
+      .card {
+        width: min(700px, 100%);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+      }
+
+      p {
+        margin: 8px 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #c9b79c;
+        font: inherit;
+      }
+
+      .actions {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      a.button {
+        display: inline-block;
+        text-decoration: none;
+        color: #fff;
+        background: var(--accent);
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-weight: 700;
+      }
+
+      .hint {
+        margin-top: 14px;
+        font-size: 14px;
+        opacity: 0.85;
+      }
+
+      code {
+        background: #fff2dd;
+        border: 1px solid #ecd5b3;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+
+      @media (max-width: 640px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>AIBoard</h1>
+      <p>This root page is for GitHub Pages. Real-time drawing still runs from your desktop Node server.</p>
+      <p>Start server on desktop with <code>npm start</code>, then use your desktop IP and board name below.</p>
+
+      <div class="grid">
+        <div>
+          <label for="ip">Desktop IP</label>
+          <input id="ip" value="192.168.55.101:3000" />
+        </div>
+        <div>
+          <label for="board">Board</label>
+          <input id="board" value="set1" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <a id="writerLink" class="button" href="#">Open Writer (Mobile)</a>
+        <a id="viewerLink" class="button" href="#">Open Viewer (Desktop)</a>
+      </div>
+
+      <p class="hint">
+        Example direct URLs: <code>http://192.168.55.101:3000/writer.html?board=set1</code> and
+        <code>http://192.168.55.101:3000/viewer.html?board=set1</code>
+      </p>
+    </main>
+
+    <script>
+      const ipEl = document.getElementById("ip");
+      const boardEl = document.getElementById("board");
+      const writerLink = document.getElementById("writerLink");
+      const viewerLink = document.getElementById("viewerLink");
+
+      function normalizeHost(host) {
+        const trimmed = host.trim();
+        if (!trimmed) return "192.168.55.101:3000";
+        return trimmed.replace(/^https?:\/\//i, "");
+      }
+
+      function updateLinks() {
+        const host = normalizeHost(ipEl.value);
+        const board = encodeURIComponent((boardEl.value || "set1").trim() || "set1");
+        writerLink.href = `http://${host}/writer.html?board=${board}`;
+        viewerLink.href = `http://${host}/viewer.html?board=${board}`;
+      }
+
+      ipEl.addEventListener("input", updateLinks);
+      boardEl.addEventListener("input", updateLinks);
+      updateLinks();
+    </script>
+  </body>
+</html>
