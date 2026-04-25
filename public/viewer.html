@@ -30,6 +30,19 @@
       const BOARD_WIDTH = 1920;
       const BOARD_HEIGHT = 1080;
 
+      function getBoardMetrics() {
+        const displayWidth = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+        const scale = Math.min(displayWidth / BOARD_WIDTH, displayHeight / BOARD_HEIGHT);
+        const drawWidth = BOARD_WIDTH * scale;
+        const drawHeight = BOARD_HEIGHT * scale;
+        return {
+          scale,
+          offsetX: (displayWidth - drawWidth) / 2,
+          offsetY: (displayHeight - drawHeight) / 2
+        };
+      }
+
       function resizeCanvas() {
         const rect = canvas.getBoundingClientRect();
         const ratio = window.devicePixelRatio || 1;
@@ -45,18 +58,20 @@
       }
 
       function fromNorm(point) {
+        const metrics = getBoardMetrics();
         return {
-          x: point.x * BOARD_WIDTH,
-          y: point.y * BOARD_HEIGHT
+          x: metrics.offsetX + point.x * BOARD_WIDTH * metrics.scale,
+          y: metrics.offsetY + point.y * BOARD_HEIGHT * metrics.scale
         };
       }
 
       function drawSegment(segment) {
         const from = fromNorm(segment.from);
         const to = fromNorm(segment.to);
+        const metrics = getBoardMetrics();
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
-        ctx.lineWidth = segment.size;
+        ctx.lineWidth = segment.size * metrics.scale;
         ctx.strokeStyle = segment.mode === "eraser" ? "#ffffff" : segment.color;
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
@@ -65,7 +80,7 @@
       }
 
       function redrawAll() {
-        ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+        ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
         for (const segment of segments) drawSegment(segment);
       }
 
